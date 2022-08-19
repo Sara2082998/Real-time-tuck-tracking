@@ -1,0 +1,146 @@
+﻿@model List<Truck>
+@{
+    ViewData["Title"] = "Trucks";
+}
+<head>
+    <style>
+        body
+        {
+           background-color:darkcyan
+        }
+    </style>
+</head>
+<div class="container w-75 justify-content-around">
+    <lable>Lat</lable>
+    <input class="form-control w-50 " type="number" id="lat" step="0.001" /><br />
+     <lable>Long</lable>
+    <input class="form-control w-50" type="number" id="longe" tep="0.001" /><br />
+    
+    <select class="form-control w-50" id="id" >
+
+
+
+        @{
+            foreach (Truck tr in @Model)
+            {
+                            <option value="@tr.id">@tr.Name</option>
+            }
+        }
+    </select>
+    <br />
+    <input type="button" onclick="send()" value="save Changes" class="btn btn-success m-2" />
+    </div>
+    <div id="map"></div>
+
+
+<script src='https://unpkg.com/wicg-inert@latest/dist/inert.min.js'></script>
+<script src="~/lib/aspnet/signalr/dist/browser/signalr.js"></script>
+
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5Qkry-WRReloOoT4pGqCecuU_gk8TcRY&callback=initMap"></script>
+
+
+<script>
+
+    let map;
+    let markers = [];
+    function initMap() {
+
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 7,
+            center: { lat: 30, lng: 31 },
+        });
+
+        getAllTrucks()
+    }
+
+    function clearMarkers() {
+        markers.forEach(ele => {
+            ele.setMap(null)
+        })
+        markers = []
+    }
+
+
+
+
+    function renderMarckers(myTrucks) {
+        console.log(myTrucks)
+        for (let i = 0; i < myTrucks.length; i++) {
+
+            //create marker
+            let marker = new google.maps.Marker({
+                position: { lat: myTrucks[i].latitude, lng: myTrucks[i].longitude },
+                map
+            });
+
+            //create window
+            let InfoWindow= new google.maps.InfoWindow({
+                content: `<div>
+                            <small>driver: ${myTrucks[i].driverName}</small>
+                            </br>
+                            <small>name: ${myTrucks[i].name}</small>
+                            </br>
+                            <small>lastupdateDate: ${myTrucks[i].lastupdateDate}</small>
+                         </div>`,
+            });
+
+            // assign click event to marker
+            marker.addListener("click", () => {
+                InfoWindow.open({
+                    anchor: marker,
+                    map,
+                    shouldFocus: false,
+                });
+            });
+            markers.push(marker)
+        }
+    }
+
+
+
+    function getAllTrucks() {
+        fetch("https://localhost:44378/Truck/TrucksData")
+            .then(data => {
+                return data.json()
+            })
+            .then(trucks => {
+                renderMarckers(trucks)
+            })
+    }
+
+
+
+    con = new signalR.HubConnectionBuilder().withUrl("/truckhub").build();
+
+    con.start();
+
+
+
+    con.on("changtruckposition", function(Trucks) {
+        clearMarkers()
+        renderMarckers(Trucks)
+    });
+
+
+
+
+    function send() {
+
+        //var obj = {
+        //    id: +document.getElementById("id").value,
+        //    lat: +document.getElementById("lat").value,
+        //    longe: +document.getElementById("longe").value,
+        //};
+        //con.invoke("sendTruck", obj);
+    }
+
+
+
+
+
+
+</script>
+
+
+
